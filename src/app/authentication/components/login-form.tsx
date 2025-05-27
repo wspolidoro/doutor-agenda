@@ -1,3 +1,5 @@
+"use client";
+
 import { Form, FormControl } from "@/components/ui/form";
 
 import { FormMessage } from "@/components/ui/form";

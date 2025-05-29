@@ -8,9 +8,23 @@ import {
   PageTitle,
 } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 import { Plus } from "lucide-react";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function DoctorsPage() {
+export default async function DoctorsPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session?.user) {
+    redirect("/authentication");
+  }
+
+  if (!session.user.clinic) {
+    redirect("/clinic-form");
+  }
+
   return (
     <PageContainer>
       <PageHeader>

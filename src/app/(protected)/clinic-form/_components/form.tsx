@@ -18,6 +18,7 @@ import { createClinic } from "@/actions/create-clinic";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { useRouter } from "next/navigation";
 
 const clinicFormSchema = z.object({
   name: z.string().trim().min(1, { message: "Nome é obrigatório" }),
@@ -31,10 +32,13 @@ const ClinicForm = () => {
     },
   });
 
+  const router = useRouter();
+
   const onSubmit = async (data: z.infer<typeof clinicFormSchema>) => {
     try {
       await createClinic(data.name);
-      //   toast.success("Clínica criada com sucesso");
+      toast.success("Clínica criada com sucesso");
+      //router.push("/dashboard");
       //   form.reset();
     } catch (error) {
       if (isRedirectError(error)) {

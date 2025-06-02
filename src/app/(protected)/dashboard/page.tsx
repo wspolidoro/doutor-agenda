@@ -25,6 +25,7 @@ import { Calendar } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { appointmentsTableColumns } from "../appointments/_components/table-columns";
 import TopSpecialties from "./_components/top-specialties";
+import { getDashboard } from "@/data/get-dashboard";
 
 interface DashboardPageProps {
   searchParams: Promise<{
@@ -52,7 +53,28 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
     );
   }
 
-  const [
+  const {
+    totalRevenue,
+    totalAppointments,
+    totalPatients,
+    totalDoctors,
+    topDoctors,
+    topSpecialties,
+    todayAppointments,
+    dailyAppointmentsData,
+  } = await getDashboard({
+    from,
+    to,
+    session: {
+      user: {
+        clinic: {
+          id: session.user.clinic.id,
+        },
+      },
+    },
+  });
+
+  /*   const [
     [totalRevenue],
     [totalAppointments],
     [totalPatients],
@@ -169,7 +191,7 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
       ),
     )
     .groupBy(sql`DATE(${appointmentsTable.date})`)
-    .orderBy(sql`DATE(${appointmentsTable.date})`);
+    .orderBy(sql`DATE(${appointmentsTable.date})`); */
 
   return (
     <PageContainer>

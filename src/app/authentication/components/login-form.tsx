@@ -1,34 +1,37 @@
 "use client";
 
-import { Form, FormControl } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
-import { FormMessage } from "@/components/ui/form";
-
+import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
 } from "@/components/ui/card";
-import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { FormItem, FormLabel, FormField } from "@/components/ui/form";
+import { FormControl, FormMessage } from "@/components/ui/form";
+import { FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().trim().email({ message: "Email inválido" }),
+  email: z
+    .string()
+    .trim()
+    .min(1, { message: "E-mail é obrigatório" })
+    .email({ message: "E-mail inválido" }),
   password: z
     .string()
     .trim()
-    .min(8, { message: "Senha deve conter pelo menos 8 caracteres" }),
+    .min(8, { message: "A senha deve ter pelo menos 8 caracteres" }),
 });
 
 const LoginForm = () => {
@@ -41,7 +44,7 @@ const LoginForm = () => {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof loginSchema>) {
+  const handleSubmit = async (values: z.infer<typeof loginSchema>) => {
     await authClient.signIn.email(
       {
         email: values.email,
@@ -52,26 +55,27 @@ const LoginForm = () => {
           router.push("/dashboard");
         },
         onError: () => {
-          toast.error("Email ou senha invalidos");
+          toast.error("E-mail ou senha inválidos.");
         },
       },
     );
-  }
+  };
 
   const handleGoogleLogin = async () => {
     await authClient.signIn.social({
       provider: "google",
       callbackURL: "/dashboard",
+      scopes: ["email", "profile"],
     });
   };
 
   return (
     <Card>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <CardHeader>
             <CardTitle>Login</CardTitle>
-            <CardDescription>Faça login para continuar</CardDescription>
+            <CardDescription>Faça login para continuar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -79,9 +83,9 @@ const LoginForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>E-mail</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite seu email" {...field} />
+                    <Input placeholder="Digite seu e-mail" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

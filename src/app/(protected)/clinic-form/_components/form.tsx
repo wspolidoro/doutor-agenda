@@ -1,9 +1,15 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
+import { Loader2 } from "lucide-react";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { createClinic } from "@/actions/create-clinic";
+import { Button } from "@/components/ui/button";
+import { DialogFooter } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -12,13 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { createClinic } from "@/actions/create-clinic";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 const clinicFormSchema = z.object({
   name: z.string().trim().min(1, { message: "Nome é obrigatório" }),
@@ -32,20 +32,15 @@ const ClinicForm = () => {
     },
   });
 
-  const router = useRouter();
-
   const onSubmit = async (data: z.infer<typeof clinicFormSchema>) => {
     try {
       await createClinic(data.name);
-      toast.success("Clínica criada com sucesso");
-      //router.push("/dashboard");
-      //   form.reset();
     } catch (error) {
       if (isRedirectError(error)) {
         return;
       }
-      toast.error("Erro ao criar clínica");
       console.error(error);
+      toast.error("Erro ao criar clínica.");
     }
   };
 
@@ -66,6 +61,7 @@ const ClinicForm = () => {
               </FormItem>
             )}
           />
+
           <DialogFooter>
             <Button type="submit" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting && (

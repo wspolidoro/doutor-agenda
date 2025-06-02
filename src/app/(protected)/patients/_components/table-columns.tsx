@@ -1,12 +1,10 @@
 "use client";
 
-import { patientsTable } from "@/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
+import { patientsTable } from "@/db/schema";
 
-import { TableActions } from "./table-actions";
+import PatientsTableActions from "./table-actions";
 
 type Patient = typeof patientsTable.$inferSelect;
 
@@ -25,10 +23,15 @@ export const patientsTableColumns: ColumnDef<Patient>[] = [
     id: "phoneNumber",
     accessorKey: "phoneNumber",
     header: "Telefone",
-    cell: ({ row }) => {
-      const phone = row.original.phoneNumber;
-      if (!phone) return "-";
-      return `(${phone.slice(0, 2)}) ${phone.slice(2, 7)}-${phone.slice(7)}`;
+    cell: (params) => {
+      const patient = params.row.original;
+      const phoneNumber = patient.phoneNumber;
+      if (!phoneNumber) return "";
+      const formatted = phoneNumber.replace(
+        /(\d{2})(\d{5})(\d{4})/,
+        "($1) $2-$3",
+      );
+      return formatted;
     },
   },
   {
@@ -44,8 +47,7 @@ export const patientsTableColumns: ColumnDef<Patient>[] = [
     id: "actions",
     cell: (params) => {
       const patient = params.row.original;
-
-      return <TableActions patient={patient} />;
+      return <PatientsTableActions patient={patient} />;
     },
   },
 ];

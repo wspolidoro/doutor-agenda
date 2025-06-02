@@ -1,7 +1,22 @@
-import { useForm } from "react-hook-form";
+"use client";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAction } from "next-safe-action/hooks";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { PatternFormat } from "react-number-format";
+import { toast } from "sonner";
 import { z } from "zod";
-import { upsertPatientSchema } from "@/actions/upsert-patient/schema";
+
+import { upsertPatient } from "@/actions/upsert-patient";
+import { Button } from "@/components/ui/button";
+import {
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -11,10 +26,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useAction } from "next-safe-action/hooks";
-import { upsertPatient } from "@/actions/upsert-patient";
-import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -22,139 +33,174 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PatternFormat } from "react-number-format";
+import { patientsTable } from "@/db/schema";
 
-type FormData = z.infer<typeof upsertPatientSchema>;
+const formSchema = z.object({
+  name: z.string().trim().min(1, {
+    message: "Nome é obrigatório.",
+  }),
+  email: z.string().email({
+    message: "Email inválido.",
+  }),
+  phoneNumber: z.string().trim().min(1, {
+    message: "Número de telefone é obrigatório.",
+  }),
+  sex: z.enum(["male", "female"], {
+    required_error: "Sexo é obrigatório.",
+  }),
+});
 
 interface UpsertPatientFormProps {
-  defaultValues?: Partial<FormData>;
+  isOpen: boolean;
+  patient?: typeof patientsTable.$inferSelect;
   onSuccess?: () => void;
 }
 
-export function UpsertPatientForm({
-  defaultValues,
+const UpsertPatientForm = ({
+  patient,
   onSuccess,
-}: UpsertPatientFormProps) {
-  const form = useForm<FormData>({
-    resolver: zodResolver(upsertPatientSchema),
-    defaultValues: defaultValues || {
-      name: "",
-      email: "",
-      phoneNumber: "",
-      sex: undefined,
+  isOpen,
+}: UpsertPatientFormProps) => {
+  const form = useForm<z.infer<typeof formSchema>>({
+    shouldUnregister: true,
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: patient?.name ?? "",
+      email: patient?.email ?? "",
+      phoneNumber: patient?.phoneNumber ?? "",
+      sex: patient?.sex ?? undefined,
     },
   });
 
-  const { execute, status } = useAction(upsertPatient, {
+  useEffect(() => {
+    if (isOpen) {
+      form.reset(patient);
+    }
+  }, [isOpen, form, patient]);
+
+  const upsertPatientAction = useAction(upsertPatient, {
     onSuccess: () => {
-      toast.success(
-        defaultValues?.id
-          ? "Paciente atualizado com sucesso!"
-          : "Paciente cadastrado com sucesso!",
-      );
-      form.reset();
+      toast.success("Paciente salvo com sucesso.");
       onSuccess?.();
     },
-    onError: (error) => {
-      toast.error(error.serverError || "Erro ao salvar paciente");
+    onError: () => {
+      toast.error("Erro ao salvar paciente.");
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    execute(data);
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    upsertPatientAction.execute({
+      ...values,
+      id: patient?.id,
+    });
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome</FormLabel>
-              <FormControl>
-                <Input placeholder="Digite o nome do paciente" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="Digite o email do paciente"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="phoneNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone</FormLabel>
-              <FormControl>
-                <PatternFormat
-                  format="(##) #####-####"
-                  customInput={Input}
-                  placeholder="Digite o telefone do paciente"
-                  value={field.value}
-                  onValueChange={(values) => {
-                    field.onChange(values.value);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="sex"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Sexo</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>
+          {patient ? patient.name : "Adicionar paciente"}
+        </DialogTitle>
+        <DialogDescription>
+          {patient
+            ? "Edite as informações desse paciente."
+            : "Adicione um novo paciente."}
+        </DialogDescription>
+      </DialogHeader>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome do paciente</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o sexo" />
-                  </SelectTrigger>
+                  <Input
+                    placeholder="Digite o nome completo do paciente"
+                    {...field}
+                  />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="male">Masculino</SelectItem>
-                  <SelectItem value="female">Feminino</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={status === "executing"}
-        >
-          {status === "executing"
-            ? "Salvando..."
-            : defaultValues?.id
-              ? "Atualizar"
-              : "Cadastrar"}
-        </Button>
-      </form>
-    </Form>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="exemplo@email.com"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número de telefone</FormLabel>
+                <FormControl>
+                  <PatternFormat
+                    format="(##) #####-####"
+                    mask="_"
+                    placeholder="(11) 99999-9999"
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value.value);
+                    }}
+                    customInput={Input}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="sex"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Sexo</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o sexo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="male">Masculino</SelectItem>
+                    <SelectItem value="female">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <DialogFooter>
+            <Button
+              type="submit"
+              disabled={upsertPatientAction.isPending}
+              className="w-full"
+            >
+              {upsertPatientAction.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
+    </DialogContent>
   );
-}
+};
+
+export default UpsertPatientForm;

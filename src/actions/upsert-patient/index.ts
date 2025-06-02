@@ -1,13 +1,14 @@
 "use server";
 
-import { actionClient } from "@/lib/next-safe-action";
-import { upsertPatientSchema } from "./schema";
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+
 import { db } from "@/db";
 import { patientsTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { actionClient } from "@/lib/next-safe-action";
+
+import { upsertPatientSchema } from "./schema";
 
 export const upsertPatient = actionClient
   .schema(upsertPatientSchema)
@@ -15,29 +16,25 @@ export const upsertPatient = actionClient
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-
-    if (!session?.user?.clinic?.id) {
+    if (!session?.user) {
       throw new Error("Unauthorized");
     }
-
-    const { id, ...rest } = parsedInput;
-
-    if (id) {
-      await db
-        .update(patientsTable)
-        .set({
-          ...rest,
-          updatedAt: new Date(),
-        })
-        .where(eq(patientsTable.id, id));
-    } else {
-      await db.insert(patientsTable).values({
-        ...rest,
-        clinicId: session.user.clinic.id,
-      });
+    if (!session?.user.clinic?.id) {
+      throw new Error("Clinic not found");
     }
 
+    await db
+      .insert(patientsTable)
+      .values({
+        ...parsedInput,
+        id: parsedInput.id,
+        clinicId: session?.user.clinic?.id,
+      })
+      .onConflictDoUpdate({
+        target: [patientsTable.id],
+        set: {
+          ...parsedInput,
+        },
+      });
     revalidatePath("/patients");
-
-    return { success: true };
   });

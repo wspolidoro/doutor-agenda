@@ -1,16 +1,23 @@
 "use client";
+
 import {
-  Calendar,
   CalendarDays,
-  Home,
-  Inbox,
   LayoutDashboard,
   LogOut,
-  Search,
   Stethoscope,
   UsersRound,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -23,21 +30,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
-import Image from "next/image";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
-import { usePathname, useRouter } from "next/navigation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Menu items.
 const items = [
   {
     title: "Dashboard",
@@ -62,8 +56,8 @@ const items = [
 ];
 
 export function AppSidebar() {
-  const session = authClient.useSession();
   const router = useRouter();
+  const session = authClient.useSession();
   const pathname = usePathname();
 
   const handleSignOut = async () => {
@@ -75,7 +69,6 @@ export function AppSidebar() {
       },
     });
   };
-
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
@@ -100,7 +93,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -114,7 +107,7 @@ export function AppSidebar() {
                       {session.data?.user?.clinic?.name}
                     </p>
                     <p className="text-muted-foreground text-sm">
-                      {session.data?.user?.email}
+                      {session.data?.user.email}
                     </p>
                   </div>
                 </SidebarMenuButton>

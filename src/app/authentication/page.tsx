@@ -1,11 +1,13 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SignUpForm from "./components/sign-up-form";
-import LoginForm from "./components/login-form";
-import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage() {
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { auth } from "@/lib/auth";
+
+import LoginForm from "./components/login-form";
+import SignUpForm from "./components/sign-up-form";
+
+const AuthenticationPage = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -14,7 +16,7 @@ export default async function LoginPage() {
   }
   return (
     <div className="flex h-screen w-screen items-center justify-center">
-      <Tabs defaultValue="account" className="w-[400px]">
+      <Tabs defaultValue="login" className="w-[400px]">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Login</TabsTrigger>
           <TabsTrigger value="register">Criar conta</TabsTrigger>
@@ -28,4 +30,6 @@ export default async function LoginPage() {
       </Tabs>
     </div>
   );
-}
+};
+
+export default AuthenticationPage;

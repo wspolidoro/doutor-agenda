@@ -1,5 +1,13 @@
-"use client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAction } from "next-safe-action/hooks";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { NumericFormat } from "react-number-format";
+import { toast } from "sonner";
+import { z } from "zod";
 
+import { upsertDoctor } from "@/actions/upsert-doctor";
+import { Button } from "@/components/ui/button";
 import {
   DialogContent,
   DialogDescription,
@@ -16,10 +24,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import z from "zod";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -29,67 +33,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { medicalSpecialties } from "../_constants";
-import { NumericFormat } from "react-number-format";
-import { useAction } from "next-safe-action/hooks";
-import { upsertDoctor } from "@/actions/upsert-doctor";
-import { toast } from "sonner";
 import { doctorsTable } from "@/db/schema";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { TrashIcon } from "lucide-react";
-import { deleteDoctor } from "@/actions/delete-doctor";
+
+import { medicalSpecialties } from "../_constants";
 
 const formSchema = z
   .object({
     name: z.string().trim().min(1, {
-      message: "Nome é obrigatório",
+      message: "Nome é obrigatório.",
     }),
     specialty: z.string().trim().min(1, {
-      message: "Especialidade é obrigatório",
+      message: "Especialidade é obrigatória.",
     }),
     appointmentPrice: z.number().min(1, {
-      message: "Preço da consulta é obrigatório",
+      message: "Preço da consulta é obrigatório.",
     }),
     availableFromWeekDay: z.string(),
     availableToWeekDay: z.string(),
     availableFromTime: z.string().min(1, {
-      message: "Hora de início é obrigatório",
+      message: "Hora de início é obrigatória.",
     }),
     availableToTime: z.string().min(1, {
-      message: "Hora de término é obrigatório",
+      message: "Hora de término é obrigatória.",
     }),
-    //clinicId: z.string().uuid(),
   })
   .refine(
     (data) => {
       return data.availableFromTime < data.availableToTime;
     },
     {
-      message: "O horário de início deve ser anterior ao horário de término",
+      message:
+        "O horário de início não pode ser anterior ao horário de término.",
       path: ["availableToTime"],
     },
   );
 
 interface UpsertDoctorFormProps {
+  isOpen: boolean;
   doctor?: typeof doctorsTable.$inferSelect;
   onSuccess?: () => void;
-  onError?: () => void;
 }
 
-export default function UpsertDoctorForm({
+const UpsertDoctorForm = ({
   doctor,
   onSuccess,
-}: UpsertDoctorFormProps) {
+  isOpen,
+}: UpsertDoctorFormProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     shouldUnregister: true,
     resolver: zodResolver(formSchema),
@@ -97,14 +86,30 @@ export default function UpsertDoctorForm({
       name: doctor?.name ?? "",
       specialty: doctor?.specialty ?? "",
       appointmentPrice: doctor?.appointmentPriceInCents
-        ? doctor?.appointmentPriceInCents / 100
+        ? doctor.appointmentPriceInCents / 100
         : 0,
-      availableFromWeekDay: doctor?.availableFromWeekDay.toString() ?? "1",
-      availableToWeekDay: doctor?.availableToWeekDay.toString() ?? "5",
+      availableFromWeekDay: doctor?.availableFromWeekDay?.toString() ?? "1",
+      availableToWeekDay: doctor?.availableToWeekDay?.toString() ?? "5",
       availableFromTime: doctor?.availableFromTime ?? "",
       availableToTime: doctor?.availableToTime ?? "",
     },
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: doctor?.name ?? "",
+        specialty: doctor?.specialty ?? "",
+        appointmentPrice: doctor?.appointmentPriceInCents
+          ? doctor.appointmentPriceInCents / 100
+          : 0,
+        availableFromWeekDay: doctor?.availableFromWeekDay?.toString() ?? "1",
+        availableToWeekDay: doctor?.availableToWeekDay?.toString() ?? "5",
+        availableFromTime: doctor?.availableFromTime ?? "",
+        availableToTime: doctor?.availableToTime ?? "",
+      });
+    }
+  }, [isOpen, form, doctor]);
 
   const upsertDoctorAction = useAction(upsertDoctor, {
     onSuccess: () => {
@@ -115,18 +120,6 @@ export default function UpsertDoctorForm({
       toast.error("Erro ao adicionar médico.");
     },
   });
-
-  const deleteDoctorAction = useAction(deleteDoctor, {
-    onSuccess: () => {
-      toast.success("Médico deletado com sucesso.");
-      onSuccess?.();
-    },
-  });
-
-  const handleDelete = () => {
-    if (!doctor) return;
-    deleteDoctorAction.execute({ id: doctor.id });
-  };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     upsertDoctorAction.execute({
@@ -144,8 +137,8 @@ export default function UpsertDoctorForm({
         <DialogTitle>{doctor ? doctor.name : "Adicionar médico"}</DialogTitle>
         <DialogDescription>
           {doctor
-            ? "Edite as informações desse médico"
-            : "Adicione um novo médico"}
+            ? "Edite as informações desse médico."
+            : "Adicione um novo médico."}
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -198,7 +191,9 @@ export default function UpsertDoctorForm({
                 <FormLabel>Preço da consulta</FormLabel>
                 <NumericFormat
                   value={field.value}
-                  onValueChange={(value) => field.onChange(value.floatValue)}
+                  onValueChange={(value) => {
+                    field.onChange(value.floatValue);
+                  }}
                   decimalScale={2}
                   fixedDecimalScale
                   decimalSeparator=","
@@ -207,7 +202,6 @@ export default function UpsertDoctorForm({
                   thousandSeparator="."
                   customInput={Input}
                   prefix="R$"
-                  className="w-full"
                 />
                 <FormMessage />
               </FormItem>
@@ -225,16 +219,16 @@ export default function UpsertDoctorForm({
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione uma dia" />
+                      <SelectValue placeholder="Selecione um dia" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="0">Domingo</SelectItem>
-                    <SelectItem value="1">Segunda-feira</SelectItem>
-                    <SelectItem value="2">Terça-feira</SelectItem>
-                    <SelectItem value="3">Quarta-feira</SelectItem>
-                    <SelectItem value="4">Quinta-feira</SelectItem>
-                    <SelectItem value="5">Sexta-feira</SelectItem>
+                    <SelectItem value="1">Segunda</SelectItem>
+                    <SelectItem value="2">Terça</SelectItem>
+                    <SelectItem value="3">Quarta</SelectItem>
+                    <SelectItem value="4">Quinta</SelectItem>
+                    <SelectItem value="5">Sexta</SelectItem>
                     <SelectItem value="6">Sábado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -250,20 +244,20 @@ export default function UpsertDoctorForm({
                 <FormLabel>Dia final de disponibilidade</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione uma dia" />
+                      <SelectValue placeholder="Selecione um dia" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="0">Domingo</SelectItem>
-                    <SelectItem value="1">Segunda-feira</SelectItem>
-                    <SelectItem value="2">Terça-feira</SelectItem>
-                    <SelectItem value="3">Quarta-feira</SelectItem>
-                    <SelectItem value="4">Quinta-feira</SelectItem>
-                    <SelectItem value="5">Sexta-feira</SelectItem>
+                    <SelectItem value="1">Segunda</SelectItem>
+                    <SelectItem value="2">Terça</SelectItem>
+                    <SelectItem value="3">Quarta</SelectItem>
+                    <SelectItem value="4">Quinta</SelectItem>
+                    <SelectItem value="5">Sexta</SelectItem>
                     <SelectItem value="6">Sábado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -410,33 +404,6 @@ export default function UpsertDoctorForm({
             )}
           />
           <DialogFooter>
-            {doctor && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline">
-                    <TrashIcon className="mr-2 h-4 w-4" />
-                    Deletar médico
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Tem certeza que deseja deletar esse médico?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Essa ação não pode ser revertida. Isso irá deletar o
-                      médico e todas as consultas agendadas para ele.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
-                      Deletar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
             <Button type="submit" disabled={upsertDoctorAction.isPending}>
               {upsertDoctorAction.isPending
                 ? "Salvando..."
@@ -449,4 +416,6 @@ export default function UpsertDoctorForm({
       </Form>
     </DialogContent>
   );
-}
+};
+
+export default UpsertDoctorForm;

@@ -1,3 +1,7 @@
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
 import {
   PageActions,
   PageContainer,
@@ -6,32 +10,27 @@ import {
   PageHeader,
   PageHeaderContent,
   PageTitle,
-} from "@/components/page-container";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import AddDoctorButton from "./_components/add-doctor-button";
-import { eq } from "drizzle-orm";
-import { doctorsTable } from "@/db/schema";
+} from "@/components/ui/page-container";
 import { db } from "@/db";
+import { doctorsTable } from "@/db/schema";
+import { auth } from "@/lib/auth";
+
+import AddDoctorButton from "./_components/add-doctor-button";
 import DoctorCard from "./_components/doctor-card";
 
-export default async function DoctorsPage() {
+const DoctorsPage = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   if (!session?.user) {
     redirect("/authentication");
   }
-
   if (!session.user.clinic) {
     redirect("/clinic-form");
   }
-
   const doctors = await db.query.doctorsTable.findMany({
     where: eq(doctorsTable.clinicId, session.user.clinic.id),
   });
-
   return (
     <PageContainer>
       <PageHeader>
@@ -52,4 +51,6 @@ export default async function DoctorsPage() {
       </PageContent>
     </PageContainer>
   );
-}
+};
+
+export default DoctorsPage;

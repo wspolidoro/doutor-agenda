@@ -13,9 +13,6 @@ import {
   PageTitle,
 } from "@/components/ui/page-container";
 import { DatePicker } from "./data-picker";
-import { appointmentsTable, doctorsTable, patientsTable } from "@/db/schema";
-import { and, count, eq, gte, lte, sql, sum, desc } from "drizzle-orm";
-import { db } from "@/db";
 import StatsCards from "./_components/stats-card";
 import dayjs from "dayjs";
 import AppointmentsChart from "./_components/appointments-chart";

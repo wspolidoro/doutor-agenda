@@ -14,10 +14,13 @@ import {
 } from "@/components/ui/page-container";
 import { DatePicker } from "./data-picker";
 import { appointmentsTable, doctorsTable, patientsTable } from "@/db/schema";
-import { and, count, eq, gte, lte, sum } from "drizzle-orm";
+import { and, count, eq, gte, lte, sql, sum } from "drizzle-orm";
 import { db } from "@/db";
 import StatsCards from "./_components/stats-card";
 import dayjs from "dayjs";
+import AppointmentsChart, {
+  RevenueChart,
+} from "./_components/appointments-chart";
 
 interface DashboardPageProps {
   searchParams: Promise<{
@@ -85,6 +88,29 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
         .where(eq(doctorsTable.clinicId, session.user.clinic.id)),
     ]);
 
+  const chartStartDate = dayjs().subtract(10, "days").startOf("day").toDate();
+  const chartEndDate = dayjs().add(10, "days").endOf("day").toDate();
+
+  const dailyAppointmentsData = await db
+    .select({
+      date: sql<string>`DATE(${appointmentsTable.date})`.as("date"),
+      appointments: count(appointmentsTable.id),
+      revenue:
+        sql<number>`COALESCE(SUM(${appointmentsTable.appointmentPriceInCents}), 0)`.as(
+          "revenue",
+        ),
+    })
+    .from(appointmentsTable)
+    .where(
+      and(
+        eq(appointmentsTable.clinicId, session.user.clinic.id),
+        gte(appointmentsTable.date, chartStartDate),
+        lte(appointmentsTable.date, chartEndDate),
+      ),
+    )
+    .groupBy(sql`DATE(${appointmentsTable.date})`)
+    .orderBy(sql`DATE(${appointmentsTable.date})`);
+
   return (
     <PageContainer>
       <PageHeader>
@@ -105,6 +131,9 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
           totalPatients={totalPatients.total}
           totalDoctors={totalDoctors.total}
         />
+        <div className="grid grid-cols-[2.25fr_1fr] gap-4">
+          <AppointmentsChart dailyAppointmentsData={dailyAppointmentsData} />
+        </div>
       </PageContent>
     </PageContainer>
   );

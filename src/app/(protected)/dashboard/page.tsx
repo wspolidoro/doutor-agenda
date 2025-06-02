@@ -59,6 +59,7 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
     [totalDoctors],
     topDoctors,
     topSpecialties,
+    todayAppointments,
   ] = await Promise.all([
     db
       .select({
@@ -134,6 +135,17 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
       )
       .groupBy(doctorsTable.specialty)
       .orderBy(desc(count(appointmentsTable.id))),
+    db.query.appointmentsTable.findMany({
+      where: and(
+        eq(appointmentsTable.clinicId, session.user.clinic.id),
+        gte(appointmentsTable.date, new Date()),
+        lte(appointmentsTable.date, new Date()),
+      ),
+      with: {
+        patient: true,
+        doctor: true,
+      },
+    }),
   ]);
 
   const chartStartDate = dayjs().subtract(10, "days").startOf("day").toDate();
@@ -184,7 +196,7 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
           <TopDoctors doctors={topDoctors} />
         </div>
         <div className="grid grid-cols-[2.25fr_1fr] gap-4">
-          {/*      <Card>
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Calendar className="text-muted-foreground" />
@@ -199,7 +211,7 @@ const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
                 data={todayAppointments}
               />
             </CardContent>
-          </Card> */}
+          </Card>
           <TopSpecialties topSpecialties={topSpecialties} />
         </div>
       </PageContent>

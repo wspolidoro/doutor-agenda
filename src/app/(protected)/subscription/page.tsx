@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
 import {
   PageContainer,
   PageContent,
@@ -10,6 +9,8 @@ import {
   PageHeaderContent,
   PageTitle,
 } from "@/components/ui/page-container";
+import { auth } from "@/lib/auth";
+
 import { SubscriptionPlan } from "./_components/subscription-plan";
 //import { SubscriptionPlan } from "./_components/subscription-plan";
 

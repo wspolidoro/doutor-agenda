@@ -1,4 +1,5 @@
 import { getPatients } from "@/actions/get-patients";
+
 import { PatientCard } from "./patient-card";
 
 export async function PatientsList() {

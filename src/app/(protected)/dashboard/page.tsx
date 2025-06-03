@@ -1,8 +1,10 @@
+import dayjs from "dayjs";
+import { Calendar } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
 import {
   PageActions,
   PageContainer,
@@ -12,17 +14,15 @@ import {
   PageHeaderContent,
   PageTitle,
 } from "@/components/ui/page-container";
-import { DatePicker } from "./data-picker";
-import StatsCards from "./_components/stats-card";
-import dayjs from "dayjs";
-import AppointmentsChart from "./_components/appointments-chart";
-import TopDoctors from "./_components/top-doctors";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "lucide-react";
-import { DataTable } from "@/components/ui/data-table";
-import { appointmentsTableColumns } from "../appointments/_components/table-columns";
-import TopSpecialties from "./_components/top-specialties";
 import { getDashboard } from "@/data/get-dashboard";
+import { auth } from "@/lib/auth";
+
+import { appointmentsTableColumns } from "../appointments/_components/table-columns";
+import AppointmentsChart from "./_components/appointments-chart";
+import StatsCards from "./_components/stats-card";
+import TopDoctors from "./_components/top-doctors";
+import TopSpecialties from "./_components/top-specialties";
+import { DatePicker } from "./data-picker";
 
 interface DashboardPageProps {
   searchParams: Promise<{

@@ -12,7 +12,6 @@ import {
 import { auth } from "@/lib/auth";
 
 import { SubscriptionPlan } from "./_components/subscription-plan";
-//import { SubscriptionPlan } from "./_components/subscription-plan";
 
 const SubscriptionPage = async () => {
   const session = await auth.api.getSession({

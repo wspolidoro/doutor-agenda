@@ -1,6 +1,6 @@
 import { getPatients } from "@/actions/get-patients";
 
-import { PatientCard } from "./patient-card";
+import PatientCard from "./patient-card";
 
 export async function PatientsList() {
   const patients = await getPatients();

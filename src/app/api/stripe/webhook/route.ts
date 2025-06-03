@@ -25,27 +25,31 @@ export const POST = async (request: Request) => {
 
   switch (event.type) {
     case "invoice.paid": {
-      const invoice = event.data.object as Stripe.Invoice;
-
-      if (!invoice.id) {
-        throw new Error("Invoice ID not found");
+      if (!event.data.object.id) {
+        throw new Error("Subscription ID not found");
       }
-
-      const subscriptionId = invoice.parent?.subscription_details?.subscription;
-      if (!subscriptionId || typeof subscriptionId !== "string") {
-        throw new Error("Subscription not found in invoice");
+      const { subscription, subscription_details, customer } = event.data
+        .object as unknown as {
+        customer: string;
+        subscription: string;
+        subscription_details: {
+          metadata: {
+            userId: string;
+          };
+        };
+      };
+      if (!subscription) {
+        throw new Error("Subscription not found");
       }
-
-      const userId = invoice.parent?.subscription_details?.metadata?.userId;
+      const userId = subscription_details.metadata.userId;
       if (!userId) {
-        throw new Error("User ID not found in invoice metadata");
+        throw new Error("User ID not found");
       }
-
       await db
         .update(usersTable)
         .set({
-          stripeSubscriptionId: subscriptionId,
-          stripeCustomerId: invoice.customer as string,
+          stripeSubscriptionId: subscription,
+          stripeCustomerId: customer,
           plan: "essential",
         })
         .where(eq(usersTable.id, userId));
